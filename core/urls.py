@@ -23,3 +23,16 @@ def sanity_test(request: Request) -> Response:
 urlpatterns.append(
     path('test/sanitytest/', sanity_test)
 )
+
+# import for rendering media files in development
+from .settings import DEBUG
+from django.conf import settings
+from django.conf.urls.static import static
+
+# THE CODE BELOW IS NOT SUITABLE FOR PRODUCTION
+# I"LL SWITCH TO AMAZON S3 BUCKET
+if DEBUG:
+	urlpatterns += static(
+		settings.MEDIA_URL,
+		document_root=settings.MEDIA_ROOT
+	)
