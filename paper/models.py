@@ -6,6 +6,7 @@ class Checkbook (models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=20, validators=[MinLengthValidator(3, "length of characters is too small")])
 	starred = models.BooleanField(default=False)
+	tags = models.ManyToManyField("Tag", through="TagMembership")
 
 	date_created = models.DateTimeField(auto_now_add=True)
 	date_edited  = models.DateTimeField(auto_now=True)
@@ -47,6 +48,7 @@ class ImageItem (models.Model):
 	image = models.ImageField(upload_to="uploads/images/")
 	title = models.CharField(max_length=20, null=False, blank=False)
 
+
 # saves audio files in checkbooks
 # this will need futher manual-validation
 class AudioItem (models.Model) :
@@ -75,3 +77,18 @@ class CheckItem (models.Model):
 	date_created = models.DateTimeField(auto_now_add=True)
 	checked = models.BooleanField(default=False)
 	text = models.CharField(max_length=60, null=False, blank=False)
+
+
+class Tag (models.Model):
+	id = models.AutoField(primary_key=True)
+	name = models.CharField(max_length=10)
+	date_created = models.DateTimeField(auto_now=True)
+	owner = models.ForeignKey("authentication.User", on_delete=models.CASCADE)
+
+	def __str__(self) -> str:
+		return self.name
+
+class TagMembership(models.Model):
+	id = models.AutoField(primary_key=True)
+	tag = models.ForeignKey("Tag", on_delete=models.CASCADE)
+	checkbook = models.ForeignKey("Checkbook", on_delete=models.CASCADE)

@@ -1,5 +1,3 @@
-from re import error
-from paper.models import Checkbook
 from . import models
 from . import serializers
 
@@ -179,8 +177,52 @@ class CheckbookView(APIView):
 		return Response(data=sr.data)
 
 	def put(self, request: Request) -> Response:
-		# create an item underthe checkbook
+		# create an item under the checkbook
 		return Response(dict(
 			message=""
 		))
 
+
+class TagView(APIView):
+
+	permission_classes = [IsAuthenticated]
+	authentication_classes = [TokenAuthentication]
+	parser_classes = [JSONParser]
+
+	def get(self, request: Request) -> Response:
+		"""show all tags belonging to the user"""
+		user = request.user
+		tags = models.Tag.objects.filter(owner=user)
+		tags_sr = serializers.TagSerializer(tags, many=True)
+
+		return Response(data=tags_sr.data)
+
+	def post(self, request: Request) -> Response:
+		"""Create a new tag"""
+		user = request.user
+		name: str = request.data.get("name")
+
+		if name:
+			tag = models.Tag(name=name, owner=user)
+			tag.save()
+
+			tag_sr = serializers.TagSerializer(tag)
+			return Response(data=tag_sr.data)
+
+		return Response(data=dict(
+			error="name value not provided"
+		), status=status.HTTP_400_BAD_REQUEST)
+	
+	def delete(self, request: Request) -> Response:
+		"""Delete a tag"""
+		user = request.user
+		tag_id: int = request.data.get("tag_id")
+
+		if tag_id:
+			tag = models.Tag.objects.filter(owner=user, id=tag_id).first()
+			tag.delete();
+			return Response(status=status.HTTP_204_NO_CONTENT)
+
+		return Response(dict(
+			error="tag id was not provided"
+		), status=status.HTTP_404_NOT_FOUND)

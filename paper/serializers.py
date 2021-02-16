@@ -1,8 +1,5 @@
-from paper.models import AudioItem, CheckItem, ChecklistItem
-from rest_framework import fields
-from rest_framework.fields import ImageField
 from . import models
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, StringRelatedField
 
 class CheckbookSerializer (ModelSerializer):
 	"""For little info."""
@@ -50,12 +47,19 @@ class ChecklistItemSerializer(ModelSerializer):
 		model = models.ChecklistItem
 
 
+class TagSerializer(ModelSerializer):
+	class Meta:
+		fields = "__all__"
+		model = models.Tag
+
+
 class CheckbookSerializerFull (ModelSerializer):
 
 	texts = TextItemSerializer(many=True)
 	images = ImageFieldSerializer(many=True)
 	voicenotes = AudioItemSerializer(many=True)
 	checklists = ChecklistItemSerializer(many=True)
+	tags = StringRelatedField(many=True)
 
 	class Meta:
 		model = models.Checkbook
