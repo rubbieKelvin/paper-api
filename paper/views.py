@@ -11,6 +11,7 @@ from django.db.utils import IntegrityError
 from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.decorators import api_view, permission_classes, parser_classes, authentication_classes
 
 # Create your views here.
 # user can create check books which can contain
@@ -213,16 +214,23 @@ class TagView(APIView):
 			error="name value not provided"
 		), status=status.HTTP_400_BAD_REQUEST)
 	
-	def delete(self, request: Request) -> Response:
-		"""Delete a tag"""
-		user = request.user
-		tag_id: int = request.data.get("tag_id")
 
-		if tag_id:
-			tag = models.Tag.objects.filter(owner=user, id=tag_id).first()
+@api_view(["DELETE"])
+@parser_classes([JSONParser])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def deleteTag(request: Request, id: int) -> Response:
+	"""Delete a tag"""
+	user = request.user
+
+	if not (id is None):
+		tag = models.Tag.objects.filter(owner=user, id=id).first()
+
+		if tag:
 			tag.delete();
-			return Response(status=status.HTTP_204_NO_CONTENT)
+			
+		return Response(status=status.HTTP_204_NO_CONTENT)
 
-		return Response(dict(
-			error="tag id was not provided"
-		), status=status.HTTP_404_NOT_FOUND)
+	return Response(dict(
+		error="tag id was not provided"
+	), status=status.HTTP_404_NOT_FOUND)
