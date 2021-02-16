@@ -138,7 +138,7 @@ class CheckbookView(APIView):
 		# just delete the id: key cuase we already stored it.
 		# and we need the content of data to save/edit our model.
 		try:
-			# dont mind the vscode error
+			# dont mind the vscode (pylance) error
 			del data["checkbook_id"]
 		except KeyError:
 			pass
