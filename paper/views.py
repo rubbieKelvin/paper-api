@@ -234,3 +234,117 @@ def deleteTag(request: Request, id: int) -> Response:
 	return Response(dict(
 		error="tag id was not provided"
 	), status=status.HTTP_404_NOT_FOUND)
+
+
+class CheckbookTextItemView(APIView):
+	parser_classes = [JSONParser]
+	permission_classes = [IsAuthenticated]
+	authentication_classes = [TokenAuthentication]
+
+	def get(self, request: Request) -> Response:
+		"""returns all the text-items belonging to the specified checkbook"""
+		checkbook, checkbook_membership = models.Checkbook.get_checkbox_model_with_membership(request)
+
+		if not (checkbook is None):
+
+			if checkbook:
+
+				if checkbook_membership:
+					text_items = models.TextItem.objects.filter(checkbook=checkbook)
+					text_items_sr = serializers.TextItemSerializer(text_items, many=True)
+					return Response(text_items_sr.data)
+				else:
+					Response(dict(error="not permitted to read this"), status=status.HTTP_401_UNAUTHORIZED)
+			else:
+				Response(dict(eror="no such checkbook", status=status.HTTP_404_NOT_FOUND))
+
+		return Response(dict(error="checkbook_id not specified"), status=status.HTTP_400_BAD_REQUEST)
+
+	def post(self, request: Request) -> Response:
+		"""create a new text-item for the specified checkbook"""
+		checkbook, membership = models.Checkbook.get_checkbox_model_with_membership(request)
+
+		if not (checkbook is None):
+			if (checkbook):
+				if (membership):
+					title = request.data.get("title", "")
+					content = request.data.get("content")
+
+					if not title:
+						return Response(dict(error="note title is empty"), status=status.HTTP_400_BAD_REQUEST)
+
+					if not content:
+						return Response(dict(error="note content is empty"), status=status.HTTP_400_BAD_REQUEST)
+
+					textitem = models.TextItem(checkbook=checkbook, text=content, title=title)
+					textitem.save()
+
+					textitem_sr = serializers.TextItemSerializer(textitem)
+					return Response(textitem_sr.data)
+				else:
+					return Response(dict(error="not permitted to edit this check book"), status=status.HTTP_401_UNAUTHORIZED)
+			else:
+				return Response(dict(error="checkbook with the given id does not exist"), status=status.HTTP_404_NOT_FOUND)
+		else:
+			return Response(dict(error="checkbook_id not specified"), status=status.HTTP_400_BAD_REQUEST)
+
+	def patch(self, request: Request) -> Response:
+		"""edit the specified text-item"""
+		checkbook, membership = models.Checkbook.get_checkbox_model_with_membership(request)
+
+		if not (checkbook is None):
+			if (checkbook):
+				if (membership):
+					textitem: models.TextItem = models.TextItem.get_textitem_model(request, checkbook)
+
+					if textitem == None:
+						return Response(dict(error="textitem_id is not specified"), status=status.HTTP_400_BAD_REQUEST)
+					
+					if not textitem:
+						return Response(dict(error="textitem not found"), status=status.HTTP_404_NOT_FOUND)
+
+					title = request.data.get("title", "")
+					content = request.data.get("content")
+
+					if title:
+						textitem.title = title
+
+					if content:
+						textitem.text = content
+
+					textitem.save()
+					textitem_sr = serializers.TextItemSerializer(textitem)
+					return Response(textitem_sr.data)
+				else:
+					return Response(dict(error="not permitted to edit this check book"), status=status.HTTP_401_UNAUTHORIZED)
+			else:
+				return Response(dict(error="checkbook with the given id does not exist"), status=status.HTTP_404_NOT_FOUND)
+		else:
+			return Response(dict(error="checkbook_id not specified"), status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["DELETE"])
+@parser_classes([JSONParser])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def deleteTextItem(request: Request, checkbook_id: int, textitem_id: int) -> Response:
+	checkbook, membership = models.Checkbook.get_checkbox_model_with_membership(request, checkbook_id)
+	if not (checkbook is None):
+		if (checkbook):
+			if (membership):
+				textitem: models.TextItem = models.TextItem.get_textitem_model(request, checkbook, textitem_id=textitem_id)
+				
+				if textitem == None:
+					return Response(dict(error="textitem_id is not specified"), status=status.HTTP_400_BAD_REQUEST)
+				
+				if not textitem:
+					return Response(dict(error="textitem not found"), status=status.HTTP_404_NOT_FOUND)
+
+				textitem.delete()
+				return Response(status=status.HTTP_204_NO_CONTENT)
+			else:
+				return Response(dict(error="not permitted to edit this check book"), status=status.HTTP_401_UNAUTHORIZED)
+		else:
+			return Response(dict(error="checkbook with the given id does not exist"), status=status.HTTP_404_NOT_FOUND)
+	else:
+		return Response(dict(error="checkbook_id not specified"), status=status.HTTP_400_BAD_REQUEST)

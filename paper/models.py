@@ -1,4 +1,5 @@
 from django.db import models
+from rest_framework.request import Request
 from django.core.validators import MinLengthValidator
 
 # Create your models here.
@@ -13,6 +14,20 @@ class Checkbook (models.Model):
 
 	def __str__(self) -> str:
 		return self.name
+
+	@staticmethod
+	def get_checkbox_model_with_membership(request: Request, checkbook_id: int = None) -> tuple:
+		checkbook_id: int = checkbook_id or request.data.get("checkbook_id")
+
+		if checkbook_id == None: return None, None
+
+		checkbook = Checkbook.objects.filter(id=checkbook_id).first()
+		if checkbook == None: return False, False
+
+		checkbook_membership = CheckbookMembership.objects.filter(user=request.user, checkbook=checkbook).first()
+		if checkbook_membership == None: return checkbook, False
+
+		return checkbook, checkbook_membership
 	
 
 # checkbook membership
@@ -38,6 +53,19 @@ class TextItem (models.Model):
 	text = models.TextField(verbose_name="value")
 	title = models.CharField(max_length=20, null=False, blank=False)
 
+	def __str__(self):
+		return f"{self.id}: {self.title}"
+
+	@staticmethod
+	def get_textitem_model(request: Request, checkbook: Checkbook, textitem_id: int = None):
+		id: int = textitem_id or request.data.get("textitem_id")
+		if id == None: return None
+
+		textitem = TextItem.objects.filter(id=id, checkbook=checkbook).first()
+
+		if not textitem: return False
+		return textitem
+
 
 # saves image files in check books
 class ImageItem (models.Model):
@@ -47,6 +75,7 @@ class ImageItem (models.Model):
 	last_edited = models.DateTimeField(auto_now=True)
 	image = models.ImageField(upload_to="uploads/images/")
 	title = models.CharField(max_length=20, null=False, blank=False)
+
 
 
 # saves audio files in checkbooks
